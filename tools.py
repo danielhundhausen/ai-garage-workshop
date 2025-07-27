@@ -1,91 +1,78 @@
-import os
-import requests
+import datetime
+from typing import Any
+import webbrowser
 
 from ddgs import DDGS
-import googlemaps
+import osmnx as ox
 from langchain.tools import tool
 
 
-# Initialize the Google Maps client with your API key
-gmaps = None  # googlemaps.Client(key=os.environ["DANIELS_GOOGLE_MAPS_API_KEY"])
 ddgs_client = DDGS()
+messages = []
+last_retrieval = (datetime.datetime.now() - datetime.timedelta(1))
 
 
-# Define the tool function
 @tool
-def find_place(query: str) -> str:
-    """ Find a place on Google Maps. """
-    result = gmaps.places(query=query)
-    if result["results"]:
-        place = result["results"][0]
-        name = place["name"]
-        address = place["formatted_address"]
-        return f"Found place: {name}, located at: {address}"
-    else:
-        return "No places found for that query."
-
-
-
-# @tool
-def find_places_openstreetmap() -> dict:
+def send_message(content: str, author: str = "Max") -> None:
     """
-    LangGraph tool to query Overpass API for restaurants in a given German city.
+    Send a message to all other agents with whom alignment regarding
+    the after work activities is to be reached.
 
-    Returns:
-        dict: {
-            "restaurants": list of dicts with name, lat, lon
-        }
+    Args:
+        content (str): content of the message
     """
-    city = "Frankfurt"
-    limit = 10
+    message = {
+        "author": author,
+        "content": content,
+        "timestamp": datetime.datetime.now()
+    }
+    messages.append(message)
 
-    if not city:
-        return {"error": "Missing 'city' in input"}
 
-    # Overpass QL query
-    query = f"""
-    [out:json][timeout:25];
-    area["name"="{city}"]["boundary"="administrative"]["admin_level"="8"]->.searchArea;
-    (
-      node["amenity"="restaurant"](area.searchArea);
-      way["amenity"="restaurant"](area.searchArea);
-      relation["amenity"="restaurant"](area.searchArea);
-    );
-    out center {limit};
+@tool
+def retrieve_messages() -> list[dict]:
     """
+    Retrieve all messages a message to all other agents with whom alignment regarding
+    the after work activities is to be reached.
 
-    url = "https://overpass-api.de/api/interpreter"
-    
-    try:
-        response = requests.post(url, data={"data": query})
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        return {"error": f"Overpass API request failed: {str(e)}"}
+    Args:
+        content (str): content of the message
+    """
+    global last_retrieval, messages
+    message = {
+        "author": "Viktor",
+        "content": "I insist on eating Italian",
+        "timestamp": datetime.datetime.now()
+    }
+    messages.append(message)
 
-    restaurants = []
-    for element in data.get("elements", []):
-        tags = element.get("tags", {})
-        name = tags.get("name")
-        lat = element.get("lat") or element.get("center", {}).get("lat")
-        lon = element.get("lon") or element.get("center", {}).get("lon")
+    new_messages = list(filter(lambda x: x["timestamp"] > last_retrieval, messages))
+    last_retrieval = datetime.datetime.now()
+    return new_messages
 
-        if name and lat and lon:
-            restaurants.append({"name": name, "lat": lat, "lon": lon})
 
-    return {"restaurants": restaurants[:limit]}
+@tool
+def open_url_in_browser(url: str) -> None:
+    """
+    Opens the provided url in a new tab in the user's bowser.
+
+    Args:
+        url (str): URL to be opened in the user's browser
+    """
+    webbrowser.open_new_tab(url)
 
 
 @tool
 def lookup_weather(location: str) -> str:
-    """ Weather lookup """
-    raise NotImplementedError("tbd")
+    """Weather lookup"""
+    # raise NotImplementedError("tbd")
+    return f"It's actually sunny and 65 degrees everywhere on earth including {location} today!"
 
 
 @tool
-def duckduckgo_search(query: str) -> str:
+def duckduckgo_search(query: str) -> list[dict[str, Any]]:
     """
-    Perform a search using DuckDuckGo Instant Answer API.
+    Perform a search using DuckDuckGo.
     This is not a full web search — returns abstract, related topics, etc.
     """
     try:
@@ -95,7 +82,18 @@ def duckduckgo_search(query: str) -> str:
         print("Failed")
         raise e
 
-    return "No relevant information found on DuckDuckGo."
 
+def search_places_openstreetmap(
+    distance: int, places: list[str] = ["restuarant", "bar"]
+):
+    """
+    Search for places nearby on openstreetmap.
 
-# print(find_places_openstreetmap())
+    Args:
+        distance (int): Distance in meters which
+    """
+    # Search for all bars and restaurants in Munich
+    tags = {"amenity": places}
+    hotel_location = (50.106089, 8.652845)  # Location of Gekko House Frankfurt
+    pois = ox.features.features_from_point(hotel_location, tags, dist=distance)
+    return pois
