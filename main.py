@@ -76,7 +76,4 @@ if __name__ == "__main__":
                 break
             stream_graph_updates(user_input)
         except Exception as e:
-            for m in state["messages"]:
-                print(m)
-            print(state["messages"])
-            print(e)
+            raise e

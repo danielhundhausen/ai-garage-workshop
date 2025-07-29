@@ -1,5 +1,8 @@
 import datetime
+import json
 from typing import Any
+import requests
+import urllib
 import webbrowser
 
 from ddgs import DDGS
@@ -7,48 +10,50 @@ import osmnx as ox
 from langchain.tools import tool
 
 
+BROKER_URL = "https://garage-workshop-agent-handson-frfuakb9g2acbcfb.germanywestcentral-01.azurewebsites.net/static/index.html"
+session = requests.Session()
 ddgs_client = DDGS()
 messages = []
 last_retrieval = (datetime.datetime.now() - datetime.timedelta(1))
 
 
 @tool
-def send_message(content: str, author: str = "Max") -> None:
+def send_message(content: str, sender: str) -> str:
     """
     Send a message to all other agents with whom alignment regarding
     the after work activities is to be reached.
 
     Args:
         content (str): content of the message
+        sender (str): name of the sender
+
+    Returns:
+        response_text (int): HTML code and content of the send_message POST request
     """
+    url = urllib.parse.urljoin(BROKER_URL, "/messages")
     message = {
-        "author": author,
+        "sender": sender,
         "content": content,
-        "timestamp": datetime.datetime.now()
     }
-    messages.append(message)
+    r = session.post(url=url, data=json.dumps(message))
+    return str(r) + " >> " + r.text
 
 
 @tool
-def retrieve_messages() -> list[dict]:
+def retrieve_messages() -> str:
     """
     Retrieve all messages a message to all other agents with whom alignment regarding
     the after work activities is to be reached.
 
     Args:
         content (str): content of the message
-    """
-    global last_retrieval, messages
-    message = {
-        "author": "Viktor",
-        "content": "I insist on eating Italian",
-        "timestamp": datetime.datetime.now()
-    }
-    messages.append(message)
 
-    new_messages = list(filter(lambda x: x["timestamp"] > last_retrieval, messages))
-    last_retrieval = datetime.datetime.now()
-    return new_messages
+    Returns:
+        response_text (int): HTML code and response of the retrieve_message GET request
+    """
+    url = urllib.parse.urljoin(BROKER_URL, "/messages/new")
+    r = session.get(url)
+    return str(r) + " >> " + r.text
 
 
 @tool
@@ -97,3 +102,10 @@ def search_places_openstreetmap(
     hotel_location = (50.106089, 8.652845)  # Location of Gekko House Frankfurt
     pois = ox.features.features_from_point(hotel_location, tags, dist=distance)
     return pois
+
+
+if __name__ == "__main__":
+    r = send_message("hi sir", "Max")
+    print(r)
+    r = retrieve_messages()
+    print(r)
