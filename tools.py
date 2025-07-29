@@ -1,5 +1,6 @@
 import datetime
 import json
+import platform
 from typing import Any
 import requests
 import time
@@ -35,6 +36,7 @@ def send_message(content: str, sender: str) -> str:
     message = {
         "sender": sender,
         "content": content,
+        "user_id": platform.node()
     }
     r = session.post(url=url, data=json.dumps(message))
     return str(r) + " >> " + r.text
@@ -62,7 +64,7 @@ def retrieve_messages() -> str:
         response_text (int): HTML code and response of the retrieve_message GET request
     """
     url = urllib.parse.urljoin(BROKER_URL, "/messages/new")
-    r = session.get(url)
+    r = session.get(url, params={"device_name": platform.node()})
     return str(r) + " >> " + r.text
 
 

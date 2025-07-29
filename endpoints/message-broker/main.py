@@ -3,7 +3,7 @@ import hashlib
 from typing import List, Dict
 import uuid
 
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -22,6 +22,7 @@ last_retrieval_times: Dict[str, datetime] = {}
 class Message(BaseModel):
     sender: str
     content: str
+    user_id: str
 
 
 @app.post("/messages")
@@ -31,6 +32,7 @@ def publish_message(msg: Message):
         "timestamp": datetime.now(),
         "sender": msg.sender,
         "content": msg.content,
+        "user_id": msg.user_id,
     }
     messages.append(entry)
     return {"status": "Message published", "message": entry}
@@ -42,12 +44,11 @@ def get_all_messages():
 
 
 @app.get("/messages/new")
-def get_new_messages(request: Request):
-    client_ip = request.client.host
-    last_seen = last_retrieval_times.get(client_ip, datetime(1970, 1, 1))
+def get_new_messages(unique_user_id: str):
+    last_seen = last_retrieval_times.get(unique_user_id, datetime(1970, 1, 1))
 
     now = datetime.now()
-    last_retrieval_times[client_ip] = now
+    last_retrieval_times[unique_user_id] = now
 
     new_messages = [msg for msg in messages if msg["timestamp"] > last_seen]
     return {"status": f"Messages since {last_seen}", "messages": new_messages}
