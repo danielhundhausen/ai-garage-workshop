@@ -1,0 +1,6 @@
+*sh
+*.egg-info
+.env
+*__pycache__/*
+cache
+todos.md

@@ -2,6 +2,7 @@ import datetime
 import json
 from typing import Any
 import requests
+import time
 import urllib
 import webbrowser
 
@@ -38,6 +39,15 @@ def send_message(content: str, sender: str) -> str:
     r = session.post(url=url, data=json.dumps(message))
     return str(r) + " >> " + r.text
 
+@tool
+def wait(wait_duration: int) -> None:
+    """
+    Wait.
+    
+    Args:
+        wait_duration (int): The amount of time in seconds to wait
+    """
+    time.sleep(wait_duration)
 
 @tool
 def retrieve_messages() -> str:
@@ -87,7 +97,7 @@ def duckduckgo_search(query: str) -> list[dict[str, Any]]:
         print("Failed")
         raise e
 
-
+@tool
 def search_places_openstreetmap(
     distance: int, places: list[str] = ["restuarant", "bar"]
 ):
