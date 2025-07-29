@@ -9,6 +9,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "langchain-openai>=0.3.28",
     "langgraph>=0.5.4",
+    "osmnx>=2.0.5",
 ]
 
 [dependency-groups]
