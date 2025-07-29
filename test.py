@@ -37,8 +37,6 @@ def search_places_openstreetmap(
 search_places_openstreetmap(500)
 
 
-
-
 def send_message_local_test(content: str, author: str = "Max") -> None:
     """
     Send a message to all other agents with whom alignment regarding
@@ -50,7 +48,7 @@ def send_message_local_test(content: str, author: str = "Max") -> None:
     message = {
         "author": author,
         "content": content,
-        "timestamp": datetime.datetime.now()
+        "timestamp": datetime.datetime.now(),
     }
     messages.append(message)
 
@@ -67,7 +65,7 @@ def retrieve_messages_local_test() -> list[dict]:
     message = {
         "author": "Viktor",
         "content": "I insist on eating Italian",
-        "timestamp": datetime.datetime.now()
+        "timestamp": datetime.datetime.now(),
     }
     messages.append(message)
 

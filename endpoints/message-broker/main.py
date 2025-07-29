@@ -57,7 +57,10 @@ def get_new_messages(unique_user_id: str):
 @app.delete("/messages")
 def clear_messages(pw: str = Header(...)):
     incoming_hash = hashlib.sha256(pw.encode()).hexdigest()
-    if incoming_hash != "e28b6665c9592e8c070df7cf7cfd0a3171e757b27a64b9053f116d2f7bca2b82":
+    if (
+        incoming_hash
+        != "e28b6665c9592e8c070df7cf7cfd0a3171e757b27a64b9053f116d2f7bca2b82"
+    ):
         raise HTTPException(status_code=403, detail="Forbidden: Incorrect password")
 
     messages.clear()

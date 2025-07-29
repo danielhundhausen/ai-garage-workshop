@@ -16,7 +16,7 @@ BROKER_URL = "https://garage-workshop-agent-handson-frfuakb9g2acbcfb.germanywest
 session = requests.Session()
 ddgs_client = DDGS()
 messages = []
-last_retrieval = (datetime.datetime.now() - datetime.timedelta(1))
+last_retrieval = datetime.datetime.now() - datetime.timedelta(1)
 
 
 @tool
@@ -33,23 +33,21 @@ def send_message(content: str, sender: str) -> str:
         response_text (int): HTML code and content of the send_message POST request
     """
     url = urllib.parse.urljoin(BROKER_URL, "/messages")
-    message = {
-        "sender": sender,
-        "content": content,
-        "user_id": platform.node()
-    }
+    message = {"sender": sender, "content": content, "user_id": platform.node()}
     r = session.post(url=url, data=json.dumps(message))
     return str(r) + " >> " + r.text
+
 
 @tool
 def wait(wait_duration: int) -> None:
     """
     Wait.
-    
+
     Args:
         wait_duration (int): The amount of time in seconds to wait
     """
     time.sleep(wait_duration)
+
 
 @tool
 def retrieve_messages() -> str:
@@ -71,7 +69,7 @@ def retrieve_messages() -> str:
 @tool
 def open_url_in_browser(url: str) -> None:
     """
-    Opens the provided url in a new tab in the user's bowser.
+    Presents the provided url in a new tab in the user's bowser.
 
     Args:
         url (str): URL to be opened in the user's browser
@@ -99,20 +97,40 @@ def duckduckgo_search(query: str) -> list[dict[str, Any]]:
         print("Failed")
         raise e
 
+
+@tool
+def get_current_location() -> tuple[float, float]:
+    """
+    Get the current location in coordinates.
+
+    Returns:
+        current_location (tuple[float, float]): location coordinates (latitude, longitude)
+    """
+    return (50.106089, 8.652845)  # Location of Gekko House Frankfurt
+
+
 @tool
 def search_places_openstreetmap(
-    distance: int, places: list[str] = ["restuarant", "bar"]
+    latitude: float,
+    longitude: float,
+    radius: int,
+    places: list[str] = ["restuarant", "bar"],
 ):
     """
-    Search for places nearby on openstreetmap.
+    Search for places like restaurants or bars nearby on openstreetmap.
 
     Args:
-        distance (int): Distance in meters which
+        latitude (float): Latitude coordinate of the user's current location
+        longitude (float): Longitudinal coordinate of the user's current location
+        radius (int): Radius around location in meters in which to search
+        places (list[str]): Types of establishments to search for
+
+    Returns:
+        pois (): object with search results
     """
     # Search for all bars and restaurants in Munich
     tags = {"amenity": places}
-    hotel_location = (50.106089, 8.652845)  # Location of Gekko House Frankfurt
-    pois = ox.features.features_from_point(hotel_location, tags, dist=distance)
+    pois = ox.features.features_from_point((latitude, longitude), tags, dist=radius)
     return pois
 
 

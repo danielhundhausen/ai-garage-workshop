@@ -12,6 +12,7 @@ from langgraph.graph.message import add_messages
 import tools
 import utils
 
+
 dotenv.load_dotenv()
 
 
@@ -32,7 +33,9 @@ agent_tools = [
     tools.lookup_weather,
     tools.duckduckgo_search,
     tools.open_url_in_browser,
+    tools.get_current_location,
     tools.search_places_openstreetmap,
+    tools.wait,
     # Tools for communication with other agents
     tools.send_message,
     tools.retrieve_messages,
@@ -41,7 +44,7 @@ llm_with_tools = llm.bind_tools(agent_tools)
 
 
 def inject_prompt(state: State) -> dict:
-    with open("system_prompt.j2", 'r') as f:
+    with open("system_prompt.j2", "r") as f:
         prompt = f.read().replace("<username>", username)
     msgs = state["messages"]
     return {"messages": msgs + [{"role": "system", "content": prompt}]}
@@ -68,7 +71,10 @@ def stream_graph_updates(user_input: str):
     """
     TODO: Add comments!
     """
-    for event in graph.stream({"messages": [{"role": "user", "content": user_input}]}, {"configurable": {"thread_id": "1"}}):
+    for event in graph.stream(
+        {"messages": [{"role": "user", "content": user_input}]},
+        {"configurable": {"thread_id": "1"}},
+    ):
         for value in event.values():
             utils.print_agent_event(value)
 
