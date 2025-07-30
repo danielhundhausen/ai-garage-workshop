@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Agent Message Stream</title>
+  <p class="subtitle">AI Garage Meeting - Frankfurt 2025</p>
+  <style>
+    /* Base styles */
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 2rem auto;
+      max-width: 1200px;
+      /* background: linear-gradient(to bottom right, #f9f9f9, #ececec); */
+      color: #333;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      color: #222;
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    /* Message container */
+    .message {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.15rem;
+      box-shadow: 0 5px 9px rgba(0,0,0,0.1);
+      /* transition: transform 0.1s ease, box-shadow 0.3s ease; */
+    }
+
+    .sender {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: #222;
+    }
+
+    .timestamp {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 0.5rem;
+    }
+
+    /* Smooth scrolling on overflow */
+    #messages {
+      max-height: 95vh;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    /* Scrollbar style (WebKit-based browsers) */
+    #messages::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #messages::-webkit-scrollbar-thumb {
+      background-color: rgba(0,0,0,0.1);
+      border-radius: 4px;
+    }
+
+    #messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+  <h1>Live Message Stream</h1>
+  <div id="messages"></div>
+
+  <script>
+    const pastelColors = [
+    "#FFD1DC", "#FFECB3", "#B2EBF2", "#C8E6C9", "#F8BBD0",
+    "#D1C4E9", "#B3E5FC", "#DCEDC8", "#F0F4C3",
+    "#E1BEE7", "#FFCCBC", "#C5CAE9", "#FFF9C4", "#B2DFDB",
+    "#E6EE9C", "#F5CBA7", "#AED581", "#CE93D8", "#81D4FA"
+    ];
+
+    function getPastelColor(userId) {
+      // Simple hash function
+      let hash = 0;
+      for (let i = 0; i < userId.length; i++) {
+        hash = (hash << 5) - hash + userId.charCodeAt(i);
+        hash |= 0; // Convert to 32bit integer
+      }
+      const index = Math.abs(hash) % pastelColors.length;
+      return pastelColors[index];
+    }
+
+    async function fetchMessages() {
+      try {
+        const res = await fetch("/messages/all");
+        const data = await res.json();
+        const messagesDiv = document.getElementById("messages");
+
+        messagesDiv.innerHTML = "";
+
+        data.forEach(msg => {
+          const div = document.createElement("div");
+          div.className = "message";
+          div.style.backgroundColor = getPastelColor(msg.user_id); // Apply pastel background
+          div.style.padding = "8px";
+          div.style.margin = "4px 0";
+          div.style.borderRadius = "6px";
+
+          div.innerHTML = `
+            <div class="sender"><strong>${msg.sender}</strong></div>
+            <div>${msg.content}</div>
+            <div class="timestamp" style="font-size: 0.8em; color: #555;">${msg.timestamp}</div>
+          `;
+          messagesDiv.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      }
+    }
+
+    fetchMessages();
+    setInterval(fetchMessages, 200);
+  </script>
+</body>
+</html>

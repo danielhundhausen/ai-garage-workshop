@@ -4,20 +4,20 @@ from typing import Annotated
 import dotenv
 from langchain_openai import AzureChatOpenAI
 from typing_extensions import TypedDict
-from langchain_core.messages import ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 
 import tools
+import utils
+
 
 dotenv.load_dotenv()
 
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
-    # user_preferences: dict[str, str]
 
 
 llm = AzureChatOpenAI(
@@ -33,12 +33,21 @@ agent_tools = [
     tools.lookup_weather,
     tools.duckduckgo_search,
     tools.open_url_in_browser,
+    tools.get_current_location,
     tools.search_places_openstreetmap,
+    tools.wait,
     # Tools for communication with other agents
     tools.send_message,
     tools.retrieve_messages,
 ]
 llm_with_tools = llm.bind_tools(agent_tools)
+
+
+def inject_prompt(state: State) -> dict:
+    with open("system_prompt.j2", "r") as f:
+        prompt = f.read().replace("<username>", username)
+    msgs = state["messages"]
+    return {"messages": msgs + [{"role": "system", "content": prompt}]}
 
 
 def user_chat(state: State) -> dict:
@@ -47,36 +56,37 @@ def user_chat(state: State) -> dict:
 
 # Building the Agent Graph
 graph_builder = StateGraph(State)
+graph_builder.add_node("inject_prompt", inject_prompt)
 graph_builder.add_node("user_chat", user_chat)
 graph_builder.add_node("tools", ToolNode(agent_tools))
 graph_builder.add_conditional_edges("user_chat", tools_condition)
 graph_builder.add_edge("tools", "user_chat")
-graph_builder.add_edge(START, "user_chat")
+graph_builder.add_edge(START, "inject_prompt")
+graph_builder.add_edge("inject_prompt", "user_chat")
 graph_builder.add_edge("user_chat", END)
-graph_builder.set_entry_point("user_chat")
 graph = graph_builder.compile(checkpointer=InMemorySaver())
 
 
 def stream_graph_updates(user_input: str):
-    for event in graph.stream({"messages": [{"role": "user", "content": user_input}]}, {"configurable": {"thread_id": "1"}}):
+    """
+    TODO: Add comments!
+    """
+    for event in graph.stream(
+        {"messages": [{"role": "user", "content": user_input}]},
+        {"configurable": {"thread_id": "1"}},
+    ):
         for value in event.values():
-            respondant = "Assistant"
-            if isinstance(value["messages"][-1], ToolMessage):
-                respondant = f"Tool ({value['messages'][-1].name})"
-            print(f"{respondant}: ", value["messages"][-1].content)
+            utils.print_agent_event(value)
 
 
 if __name__ == "__main__":
-    # Running the user chat loop
+    # First user interaction, asking for name
+    username = utils.get_user_input("What's your name? ")
+    stream_graph_updates("")
+    # Running the user chat infinite loop
     while True:
         try:
-            user_input = input("User: ")
-            if user_input.lower() in ["quit", "exit", "q"]:
-                print("Garage Out!")
-                break
+            user_input = utils.get_user_input(f"{username}: ")
             stream_graph_updates(user_input)
         except Exception as e:
-            for m in state["messages"]:
-                print(m)
-            print(state["messages"])
-            print(e)
+            raise e

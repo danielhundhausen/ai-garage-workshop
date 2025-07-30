@@ -1,3 +1,4 @@
+from datetime import datetime
 import main
 import osmnx as ox
 
@@ -34,3 +35,40 @@ def search_places_openstreetmap(
 
 
 search_places_openstreetmap(500)
+
+
+def send_message_local_test(content: str, author: str = "Max") -> None:
+    """
+    Send a message to all other agents with whom alignment regarding
+    the after work activities is to be reached.
+
+    Args:
+        content (str): content of the message
+    """
+    message = {
+        "author": author,
+        "content": content,
+        "timestamp": datetime.datetime.now(),
+    }
+    messages.append(message)
+
+
+def retrieve_messages_local_test() -> list[dict]:
+    """
+    Retrieve all messages a message to all other agents with whom alignment regarding
+    the after work activities is to be reached.
+
+    Args:
+        content (str): content of the message
+    """
+    global last_retrieval, messages
+    message = {
+        "author": "Viktor",
+        "content": "I insist on eating Italian",
+        "timestamp": datetime.datetime.now(),
+    }
+    messages.append(message)
+
+    new_messages = list(filter(lambda x: x["timestamp"] > last_retrieval, messages))
+    last_retrieval = datetime.datetime.now()
+    return new_messages

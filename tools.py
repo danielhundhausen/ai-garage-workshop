@@ -1,5 +1,10 @@
 import datetime
+import json
+import platform
 from typing import Any
+import requests
+import time
+import urllib
 import webbrowser
 
 from ddgs import DDGS
@@ -7,54 +12,69 @@ import osmnx as ox
 from langchain.tools import tool
 
 
+BROKER_URL = "https://garage-workshop-agent-handson-frfuakb9g2acbcfb.germanywestcentral-01.azurewebsites.net/static/index.html"
+session = requests.Session()
 ddgs_client = DDGS()
 messages = []
-last_retrieval = (datetime.datetime.now() - datetime.timedelta(1))
+last_retrieval = datetime.datetime.now() - datetime.timedelta(1)
 
 
 @tool
-def send_message(content: str, author: str = "Max") -> None:
+def send_message(content: str, sender: str) -> str:
     """
     Send a message to all other agents with whom alignment regarding
     the after work activities is to be reached.
 
     Args:
         content (str): content of the message
+        sender (str): name of the sender
+
+    Returns:
+        response_text (int): HTML code and content of the send_message POST request
     """
-    message = {
-        "author": author,
-        "content": content,
-        "timestamp": datetime.datetime.now()
-    }
-    messages.append(message)
+    url = urllib.parse.urljoin(BROKER_URL, "/messages")
+    message = {"sender": sender, "content": content, "user_id": platform.node()}
+    r = session.post(url=url, data=json.dumps(message))
+    return str(r) + " >> " + r.text
 
 
 @tool
-def retrieve_messages() -> list[dict]:
+def wait(wait_duration: int) -> str:
+    """
+    Wait.
+
+    Args:
+        wait_duration (int): The amount of time in seconds to wait (max. 10)
+
+    Returns:
+        _ (str): Time waited as a string
+    """
+    wait_duration = min(wait_duration, 10)
+    time.sleep(wait_duration)
+    return f"Waited for {wait_duration}"
+
+
+@tool
+def retrieve_messages() -> str:
     """
     Retrieve all messages a message to all other agents with whom alignment regarding
     the after work activities is to be reached.
 
     Args:
         content (str): content of the message
-    """
-    global last_retrieval, messages
-    message = {
-        "author": "Viktor",
-        "content": "I insist on eating Italian",
-        "timestamp": datetime.datetime.now()
-    }
-    messages.append(message)
 
-    new_messages = list(filter(lambda x: x["timestamp"] > last_retrieval, messages))
-    last_retrieval = datetime.datetime.now()
-    return new_messages
+    Returns:
+        response_text (int): HTML code and response of the retrieve_message GET request
+    """
+    url = urllib.parse.urljoin(BROKER_URL, "/messages/new")
+    r = session.get(url, params={"device_name": platform.node()})
+    return str(r) + " >> " + r.text
 
 
 @tool
 def open_url_in_browser(url: str) -> None:
     """
-    Opens the provided url in a new tab in the user's bowser.
+    Presents the provided url in a new tab in the user's bowser.
 
     Args:
         url (str): URL to be opened in the user's browser
@@ -83,17 +103,44 @@ def duckduckgo_search(query: str) -> list[dict[str, Any]]:
         raise e
 
 
+@tool
+def get_current_location() -> tuple[float, float]:
+    """
+    Get the current location in coordinates.
+
+    Returns:
+        current_location (tuple[float, float]): location coordinates (latitude, longitude)
+    """
+    return (50.106089, 8.652845)  # Location of Gekko House Frankfurt
+
+
+@tool
 def search_places_openstreetmap(
-    distance: int, places: list[str] = ["restuarant", "bar"]
+    latitude: float,
+    longitude: float,
+    radius: int,
+    places: list[str] = ["restaurant", "bar"],
 ):
     """
-    Search for places nearby on openstreetmap.
+    Search for places like restaurants or bars nearby on openstreetmap.
 
     Args:
-        distance (int): Distance in meters which
+        latitude (float): Latitude coordinate of the user's current location
+        longitude (float): Longitudinal coordinate of the user's current location
+        radius (int): Radius around location in meters in which to search
+        places (list[str]): Types of establishments to search for
+
+    Returns:
+        pois (): object with search results
     """
     # Search for all bars and restaurants in Munich
     tags = {"amenity": places}
-    hotel_location = (50.106089, 8.652845)  # Location of Gekko House Frankfurt
-    pois = ox.features.features_from_point(hotel_location, tags, dist=distance)
+    pois = ox.features.features_from_point((latitude, longitude), tags, dist=radius)
     return pois
+
+
+if __name__ == "__main__":
+    r = send_message("hi sir", "Max")
+    print(r)
+    r = retrieve_messages()
+    print(r)
