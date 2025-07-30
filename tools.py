@@ -119,27 +119,34 @@ def search_places_openstreetmap(
     latitude: float,
     longitude: float,
     radius: int,
-    places: list[str] = ["restaurant", "bar"],
 ):
     """
-    Search for places like restaurants or bars nearby on openstreetmap.
+    Search for places like restaurants, bars and similar nearby on openstreetmap.
+    Also returns leisure places.
 
     Args:
         latitude (float): Latitude coordinate of the user's current location
         longitude (float): Longitudinal coordinate of the user's current location
-        radius (int): Radius around location in meters in which to search
-        places (list[str]): Types of establishments to search for
+        radius (int): Radius around location in meters in which to search (max. 2000)
 
     Returns:
         pois (): object with search results
     """
+    # amenities (list[str]): Types of establishments to search for, can be the default values
+    amenities: list[str] = ['bar', 'biergarten', 'cafe', 'fast_food', 'ice_cream', 'pub', 'restuarant', 'parking', 'taxi']
     # Search for all bars and restaurants in Munich
-    tags = {"amenity": places}
-    pois = ox.features.features_from_point((latitude, longitude), tags, dist=radius)
+    tags = {"amenity": amenities}
+    pois = ox.features.features_from_point((latitude, longitude), tags, dist=min(radius, 2000))
     return pois
 
 
 if __name__ == "__main__":
+    x = search_places_openstreetmap()
+    print(type(x))
+    print(x)
+    print(x.columns)
+    import sys
+    sys.exit(0)
     r = send_message("hi sir", "Max")
     print(r)
     r = retrieve_messages()
