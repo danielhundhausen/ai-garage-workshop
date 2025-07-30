@@ -67,7 +67,7 @@ def retrieve_messages() -> str:
         response_text (int): HTML code and response of the retrieve_message GET request
     """
     url = urllib.parse.urljoin(BROKER_URL, "/messages/new")
-    r = session.get(url, params={"device_name": platform.node()})
+    r = session.get(url, params={"unique_user_id": platform.node()})
     return str(r) + " >> " + r.text
 
 
