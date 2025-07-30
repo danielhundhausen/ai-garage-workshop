@@ -39,14 +39,19 @@ def send_message(content: str, sender: str) -> str:
 
 
 @tool
-def wait(wait_duration: int) -> None:
+def wait(wait_duration: int) -> str:
     """
     Wait.
 
     Args:
-        wait_duration (int): The amount of time in seconds to wait
+        wait_duration (int): The amount of time in seconds to wait (max. 10)
+
+    Returns:
+        _ (str): Time waited as a string
     """
+    wait_duration = min(wait_duration, 10)
     time.sleep(wait_duration)
+    return f"Waited for {wait_duration}"
 
 
 @tool
@@ -114,7 +119,7 @@ def search_places_openstreetmap(
     latitude: float,
     longitude: float,
     radius: int,
-    places: list[str] = ["restuarant", "bar"],
+    places: list[str] = ["restaurant", "bar"],
 ):
     """
     Search for places like restaurants or bars nearby on openstreetmap.
