@@ -4,6 +4,7 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 class bcolors:
     OKBLUE = '\033[94m'
+    YELLOW = '\033[93m'
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
@@ -20,7 +21,7 @@ def print_agent_event(value: dict) -> None:
     if isinstance(last_message, ToolMessage):
         print(f"{bcolors.OKCYAN}{respondant}: ", str(last_message.content) + bcolors.ENDC)
     if isinstance(last_message, AIMessage):
-        print(f"{bcolors.BOLD}{respondant}: ", str(last_message.content) + bcolors.ENDC)
+        print(f"{bcolors.YELLOW}{respondant}: ", str(last_message.content) + bcolors.ENDC)
 
 
 def get_user_input(msg: str) -> str:
