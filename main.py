@@ -13,7 +13,8 @@ import tools
 import utils
 
 
-dotenv.load_dotenv()
+# TODO: Make sure the `dotenv` module loads the .env environment variables
+# dotenv.???()
 
 
 class State(TypedDict):
@@ -28,20 +29,9 @@ llm = AzureChatOpenAI(
     timeout=None,
     max_retries=1,
 )
-agent_tools = [
-    # TODO: Let workshop participants fill this out
-    tools.lookup_weather,
-    tools.duckduckgo_search,
-    tools.open_url_in_browser,
-    tools.get_current_location,
-    tools.search_places_openstreetmap,
-    tools.wait,
-    # Tools for communication with other agents
-    tools.send_message,
-    tools.retrieve_messages,
-    tools.retrieve_full_message_history
-]
-llm_with_tools = llm.bind_tools(agent_tools)
+# TODO: Define the list of tools at the agent's disposal
+agent_tools = []
+llm_with_tools = None # TODO: bind the tools to the llm
 
 
 def inject_prompt(state: State) -> dict:
@@ -56,21 +46,26 @@ def user_chat(state: State) -> dict:
 
 
 # Building the Agent Graph
+# TODO: Build the graph
 graph_builder = StateGraph(State)
-graph_builder.add_node("inject_prompt", inject_prompt)
-graph_builder.add_node("user_chat", user_chat)
-graph_builder.add_node("tools", ToolNode(agent_tools))
-graph_builder.add_conditional_edges("user_chat", tools_condition)
-graph_builder.add_edge("tools", "user_chat")
-graph_builder.add_edge(START, "inject_prompt")
-graph_builder.add_edge("inject_prompt", "user_chat")
-graph_builder.add_edge("user_chat", END)
+# TODO: Add nodes to the graph
+# TODO: Add edges between the nodes
+# graph_builder.add_node("", None)
+# graph_builder.add_conditional_edges("", tools_condition)
+# graph_builder.add_edge("", "")
 graph = graph_builder.compile(checkpointer=InMemorySaver())
 
 
 def stream_graph_updates(user_input: str):
     """
-    TODO: Add comments!
+    Streams and prints events from a LangGraph agent in response to user input.
+
+    Sends the user's message to a LangGraph agent and listens to its streamed response events.
+    Each event's values are processed and printed using a utility function, allowing real-time
+    monitoring of the agent's internal steps or outputs.
+
+    Args:
+        user_input (str): The user's input message to be processed by the LangGraph agent.
     """
     for event in graph.stream(
         {"messages": [{"role": "user", "content": user_input}]},
@@ -85,9 +80,9 @@ if __name__ == "__main__":
     username = utils.get_user_input("What's your name? ")
     stream_graph_updates("")
     # Running the user chat infinite loop
-    while True:
-        try:
-            user_input = utils.get_user_input(f"{username}: ")
-            stream_graph_updates(user_input)
-        except Exception as e:
-            raise e
+    # TODO: Wrap the try-except block below in an infinite loop to keep the interaction going
+    try:
+        user_input = utils.get_user_input(f"{username}: ")
+        stream_graph_updates(user_input)
+    except Exception as e:
+        raise e

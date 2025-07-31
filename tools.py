@@ -20,6 +20,9 @@ messages = []
 last_retrieval = datetime.datetime.now() - datetime.timedelta(1)
 
 
+# TODO: Add tool that enable the agent to sleep for a few seconds, while waiting for messages to arrive
+
+
 @tool
 def send_message(content: str, sender: str) -> str:
     """
@@ -37,22 +40,6 @@ def send_message(content: str, sender: str) -> str:
     message = {"sender": sender, "content": content, "user_id": platform.node()}
     r = session.post(url=url, data=json.dumps(message))
     return str(r) + " >> " + r.text
-
-
-@tool
-def wait(wait_duration: int) -> str:
-    """
-    Wait.
-
-    Args:
-        wait_duration (int): The amount of time in seconds to wait (max. 10)
-
-    Returns:
-        _ (str): Time waited as a string
-    """
-    wait_duration = min(wait_duration, 10)
-    time.sleep(wait_duration)
-    return f"Waited for {wait_duration}"
 
 
 @tool
