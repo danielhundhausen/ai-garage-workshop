@@ -39,6 +39,7 @@ agent_tools = [
     # Tools for communication with other agents
     tools.send_message,
     tools.retrieve_messages,
+    tools.retrieve_full_message_history
 ]
 llm_with_tools = llm.bind_tools(agent_tools)
 

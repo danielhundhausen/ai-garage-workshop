@@ -1,5 +1,6 @@
 import datetime
 import json
+import math
 import platform
 from typing import Any
 import requests
@@ -55,16 +56,28 @@ def wait(wait_duration: int) -> str:
 
 
 @tool
-def retrieve_messages() -> str:
+def retrieve_full_message_history() -> str:
     """
-    Retrieve all messages a message to all other agents with whom alignment regarding
+    Retrieve all messages of the entire chat history from all agents with whom alignment regarding
     the after work activities is to be reached.
 
-    Args:
-        content (str): content of the message
+    Returns:
+        response_text: HTML code and response of the retrieve_message GET request
+    """
+    url = urllib.parse.urljoin(BROKER_URL, "/messages/all")
+    r = session.get(url, params={"unique_user_id": platform.node()})
+    return str(r) + " >> " + r.text
+
+
+
+@tool
+def retrieve_messages() -> str:
+    """
+    Retrieve all new messages from all agents with whom alignment regarding
+    the after work activities is to be reached.
 
     Returns:
-        response_text (int): HTML code and response of the retrieve_message GET request
+        response_text: HTML code and response of the retrieve_message GET request
     """
     url = urllib.parse.urljoin(BROKER_URL, "/messages/new")
     r = session.get(url, params={"unique_user_id": platform.node()})
@@ -116,38 +129,99 @@ def get_current_location() -> tuple[float, float]:
 
 @tool
 def search_places_openstreetmap(
+    amenities: list[str],
     latitude: float,
     longitude: float,
     radius: int,
 ):
     """
-    Search for places like restaurants, bars and similar nearby on openstreetmap.
-    Also returns leisure places.
+    Search for certain types of establishments (amenities),
+    such as bars or restaurants around given coordinates
+    within a given radius on openstreetmap.
 
     Args:
+        amenities (list[str]): Can be 'bar', 'biergarten', 'cafe', 'fast_food', 'ice_cream', 'pub', 'restuarant', 'parking', 'taxi'
         latitude (float): Latitude coordinate of the user's current location
         longitude (float): Longitudinal coordinate of the user's current location
-        radius (int): Radius around location in meters in which to search (max. 2000)
+        radius (int): Radius around location in meters in which to search (max. 1000)
 
     Returns:
-        pois (): object with search results
+        pois (dataframe): table object with search results
     """
-    # amenities (list[str]): Types of establishments to search for, can be the default values
-    amenities: list[str] = ['bar', 'biergarten', 'cafe', 'fast_food', 'ice_cream', 'pub', 'restuarant', 'parking', 'taxi']
-    # Search for all bars and restaurants in Munich
     tags = {"amenity": amenities}
-    pois = ox.features.features_from_point((latitude, longitude), tags, dist=min(radius, 2000))
-    return pois
+    pois = ox.features.features_from_point(
+        (latitude, longitude), tags, dist=min(radius, 1000)
+    )
+    relevant_columns = [
+        "addr:city",
+        "addr:housenumber",
+        "addr:street",
+        "amenity",
+        "cuisine",
+        "indoor_seating",
+        "name",
+        "opening_hours",
+        "outdoor_seating",
+        "phone",
+        "website",
+        "brewery",
+        "diet:kosher",
+        "diet:vegan",
+        "diet:vegetarian",
+        "payment:credit_cards",
+        "payment:debit_cards",
+        "smoking",
+        "url",
+        "check_date:opening_hours",
+        "cuisine:de",
+        "level",
+        "air_conditioning",
+        "bar",
+        "capacity",
+        "changing_table",
+        "reservation",
+        "toilets",
+        "contact:phone",
+        "contact:website",
+        "operator",
+        "payment:cash",
+        "takeaway",
+        "source",
+        "website:menu",
+        "brand",
+        "note",
+        "contact:mobile",
+        "opening_hours:signed",
+        "name:zh",
+        "description",
+        "diet:lactose_free",
+        "diet:nut_free",
+        "payment:american_express",
+        "payment:mastercard",
+        "payment:visa",
+        "mobile",
+        "access",
+        "cuisine:crossover",
+        "organic",
+        "payment:apple_pay",
+        "payment:google_pay",
+    ]
+    options = []
+    for _, row in pois.iterrows():
+        option = {
+            x: row[x]
+            for x in relevant_columns
+            if x in pois.columns and not str(row[x]) == "nan"
+        }
+        options.append(option)
+    print(options[0]["name"])
+    print(type(options[0]["name"]))
+    return options
 
 
 if __name__ == "__main__":
-    x = search_places_openstreetmap()
+    x = search_places_openstreetmap(["restaurant"], 50.106089, 8.652845, 650)
     print(type(x))
     print(x)
-    print(x.columns)
     import sys
     sys.exit(0)
-    r = send_message("hi sir", "Max")
-    print(r)
-    r = retrieve_messages()
-    print(r)
